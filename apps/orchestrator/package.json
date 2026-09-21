@@ -1,0 +1,19 @@
+{
+  "name": "red-vs-blue-orchestrator",
+  "version": "1.0.0",
+  "description": "Hack The North - Red vs Blue Agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:init": "wrangler d1 execute INCIDENT_DB --local --file=./migrations/0001_init.sql",
+    "db:init:remote": "wrangler d1 execute INCIDENT_DB --remote --file=./migrations/0001_init.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250204.0",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.109.2"
+  }
+}

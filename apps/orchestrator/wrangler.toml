@@ -1,0 +1,82 @@
+name = "red-vs-blue-engine"
+main = "src/index.ts"
+# >= 2024-04-03 enables Durable Object RPC (calling stub.ingest() directly instead of
+# hand-rolling fetch() plumbing). Member 2's code depends on this.
+compatibility_date = "2024-11-11"
+
+# ---------------------------------------------------------------------------
+# Member 1: KV for rules (hot-path reads)
+# ---------------------------------------------------------------------------
+[[kv_namespaces]]
+binding = "RULES_KV"
+id = "644046ee9f474814b34ceeaf5643fe5c"
+
+# ---------------------------------------------------------------------------
+# Member 1 & 2: Queues
+# ---------------------------------------------------------------------------
+[[queues.producers]]
+binding = "ANALYSIS_QUEUE"
+queue = "suspicious-traffic-queue"
+
+[[queues.consumers]]
+queue = "suspicious-traffic-queue"
+max_batch_size = 10
+max_batch_timeout = 2
+# The consumer acks/retries per message, so these bound how long a genuinely
+# broken message can keep coming back.
+max_retries = 3
+dead_letter_queue = "suspicious-traffic-dlq"
+
+# ---------------------------------------------------------------------------
+# Member 2: Durable Objects for stateful tracking
+# ---------------------------------------------------------------------------
+[[durable_objects.bindings]]
+name = "INCIDENT_COMMANDER"
+class_name = "IncidentCommander"
+
+[[durable_objects.bindings]]
+name = "CAMPAIGN_TRACKER"
+class_name = "CampaignTracker"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["IncidentCommander", "CampaignTracker"]
+
+# ---------------------------------------------------------------------------
+# Member 2: D1 incident ledger (long-term memory)
+# Create with:  npx wrangler d1 create red-vs-blue-incidents
+# then paste the id below. Every write is fail-soft, so the engine runs without it.
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "INCIDENT_DB"
+database_name = "htn"
+database_id = "00acc9f1-a1c5-439b-808f-52f1ac584b40"
+
+# ---------------------------------------------------------------------------
+# Member 2: policy tuning. All optional — see src/commander/policy.ts for defaults.
+# ---------------------------------------------------------------------------
+[vars]
+BURST_THRESHOLD = "3"
+BURST_WINDOW_MS = "60000"
+SCORE_HALF_LIFE_MS = "600000"
+INCIDENT_IDLE_TIMEOUT_MS = "120000"
+CAMPAIGN_MIN_IPS = "3"
+# "auto" tries Member 3's analyst and falls back on failure.
+# "fallback" skips it entirely — use this for a deterministic live demo.
+ANALYST_MODE = "auto"
+
+# ---------------------------------------------------------------------------
+# Member 3: Workers AI
+# ---------------------------------------------------------------------------
+[ai]
+binding = "AI"
+
+# ---------------------------------------------------------------------------
+# Member 3: Vectorize.
+# NOTE: Vectorize has no local emulation. Uncommenting this means `wrangler dev` must
+# be run with --remote. Left off so the local demo works without a Cloudflare account;
+# Member 3 should enable it when wiring up similarity search.
+# ---------------------------------------------------------------------------
+# [[vectorize]]
+# binding = "ATTACK_VECTORS"
+# index_name = "attacks-index"

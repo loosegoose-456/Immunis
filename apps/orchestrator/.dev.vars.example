@@ -1,0 +1,19 @@
+# Copy this file to `.dev.vars` before running `npm run dev`.
+#
+#     cp .dev.vars.example .dev.vars
+#
+# `.dev.vars` is gitignored (it is where local secrets go). Without it the Shield has no
+# upstream to forward to and answers every request with 503.
+
+# The intentionally vulnerable origin the Shield proxies allowed traffic to (apps/target).
+DEMO_UPSTREAM="http://localhost:3001"
+
+# Demo only: trust an `x-demo-source-ip` header so the Red Team console can simulate a
+# botnet from a single machine. Required for the "Botnet ×4" distributed-campaign demo.
+# Leave it unset (or "false") anywhere that is not a local demo.
+DEMO_ALLOW_SOURCE_SPOOF="true"
+
+# Optional: "fallback" skips Workers AI and always uses the deterministic synthesizer.
+# The default ("auto") tries Workers AI and falls back on any failure, so a missing
+# Cloudflare login is fine — the demo still runs end to end.
+# ANALYST_MODE="fallback"
